@@ -1,0 +1,22 @@
+services:
+  bookcatalogapi:
+    restart: always
+    image: ${DOCKER_REGISTRY-}bookcatalogapi
+    build:
+      context: .
+      dockerfile: BookCatalogAPI/Dockerfile
+    networks: 
+      - catalog
+
+  bookcatalogclient:
+    restart: always
+    image: ${DOCKER_REGISTRY-}bookcatalogclient
+    build:
+      context: .
+      dockerfile: BookCatalogClient/Dockerfile
+    networks: 
+      - catalog
+      
+networks:
+  catalog:
+    name: "catalog"

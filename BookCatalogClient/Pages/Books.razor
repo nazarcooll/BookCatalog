@@ -1,0 +1,93 @@
+﻿@page "/books"
+@using BookCatalogClient.Models
+@inject HttpClient Http
+
+<PageTitle>Books</PageTitle>
+
+<h1>Books</h1>
+
+@if (bookItems == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Temp. (C)</th>
+                <th>Temp. (F)</th>
+                <th>Summary</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var book in bookItems)
+            {
+                <tr>
+                    <td>@book.Date.ToShortDateString()</td>
+                    <td>@book.Name</td>
+                    <td>@book.Author</td>
+                    <td>@book.Summary</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private BookItem editItem = new();
+    private string editRowStyle = "none";
+    private string? newItemName;
+    private string? serviceEndpoint;
+    private BookItem[]? bookItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        serviceEndpoint = $"{Config.GetValue<string>("BackendUrl")}/todoitems";
+        await GetTodoItems();
+    }
+
+    private async Task GetTodoItems()
+    {
+        bookItems = await Http.GetFromJsonAsync<BookItem[]>();
+    }
+
+    private void EditItem(long id)
+    {
+        if (bookItems is not null)
+        {
+            editItem = bookItems.Single(i => i.Id == id);
+            editRowStyle = "table-row";
+        }
+    }
+
+    private async Task AddItem()
+    {
+        if (!string.IsNullOrEmpty(newItemName))
+        {
+            var addItem = new BookItem { Name = newItemName };
+            await Http.PostAsJsonAsync(serviceEndpoint, addItem);
+            newItemName = string.Empty;
+            await GetTodoItems();
+            editRowStyle = "none";
+        }
+    }
+
+    private async Task SaveItem()
+    {
+        if (editItem is not null)
+        {
+            await Http.PutAsJsonAsync($"{serviceEndpoint}/{editItem.Id}", editItem);
+        }
+        await GetTodoItems();
+        editRowStyle = "none";
+    }
+
+    private async Task DeleteItem(long id)
+    {
+        await Http.DeleteAsync($"{serviceEndpoint}/{id}");
+        await GetTodoItems();
+        editRowStyle = "none";
+    }
+}
