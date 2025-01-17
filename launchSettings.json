@@ -8,7 +8,7 @@
       "composeLaunchUrl": "{Scheme}://localhost:{ServicePort}/",
       "serviceActions": {
         "bookcatalogapi": "StartDebugging",
-        "bookcatalogclient": "StartWithoutDebugging"
+        "bookcatalogclient": "StartDebugging"
       }
     }
   }

@@ -1,4 +1,6 @@
 using BookCatalogAPI.Model;
+using BookCatalogAPI.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,14 +14,15 @@ builder.Services.AddDbContext<BooksCatalogContext>(opt => opt.UseInMemoryDatabas
 builder.Services.AddCors(
     options => options.AddPolicy(
         "wasm",
-        policy => policy.WithOrigins([builder.Configuration["BackendUrl"] ?? "https://localhost:5001",
-            builder.Configuration["FrontendUrl"] ?? "https://localhost:5002"])
+        policy => policy
+            .AllowAnyOrigin()
             .AllowAnyMethod()
             .AllowAnyHeader()));
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -32,8 +35,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("wasm");
 
-app.UseHttpsRedirection();
-
 // Set up API endpoints and methods
 var todoItems = app.MapGroup("/books");
 
@@ -43,6 +44,8 @@ todoItems.MapPost("/", CreateBook);
 todoItems.MapPut("/{id}", UpdateBook);
 todoItems.MapDelete("/{id}", DeleteBook);
 
+app.MapHub<BooksHub>("/bookshub");
+
 app.Run();
 
 static async Task<IResult> GetAllBooks(BooksCatalogContext db)
@@ -50,7 +53,7 @@ static async Task<IResult> GetAllBooks(BooksCatalogContext db)
     return TypedResults.Ok(await db.Books.ToArrayAsync());
 }
 
-static async Task<IResult> GetBook(long id, BooksCatalogContext db)
+static async Task<IResult> GetBook(Guid id, BooksCatalogContext db)
 {
     return await db.Books.FindAsync(id) is Book book ? TypedResults.Ok(book) : TypedResults.NotFound();
 }
@@ -63,7 +66,7 @@ static async Task<IResult> CreateBook(Book book, BooksCatalogContext db)
     return TypedResults.Created($"/books/{book.Id}", book);
 }
 
-static async Task<IResult> UpdateBook(long id, Book inputBook, BooksCatalogContext db)
+static async Task<IResult> UpdateBook(Guid id, Book inputBook, BooksCatalogContext db, IHubContext<BooksHub> hub)
 {
     var book = await db.Books.FindAsync(id);
 
@@ -73,13 +76,17 @@ static async Task<IResult> UpdateBook(long id, Book inputBook, BooksCatalogConte
     }
 
     book.Name = inputBook.Name;
+    book.Author = inputBook.Author;
+    book.Date = inputBook.Date;
+    book.Summary = inputBook.Summary;
 
     await db.SaveChangesAsync();
+    await hub.Clients.All.SendAsync(BooksHub.BookUpdatedEventName, book);
 
     return TypedResults.NoContent();
 }
 
-static async Task<IResult> DeleteBook(long id, BooksCatalogContext db)
+static async Task<IResult> DeleteBook(Guid id, BooksCatalogContext db)
 {
     if (await db.Books.FindAsync(id) is Book book)
     {

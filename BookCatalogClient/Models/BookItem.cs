@@ -2,9 +2,9 @@
 
 public record BookItem
 {
-    public long Id { get; set; }
-    public required string Name { get; set; }
-    public required string Author { get; set; }
+    public Guid Id { get; set; } = default;
+    public string? Name { get; set; }
+    public string? Author { get; set; }
     public DateTime Date { get; set; }
     public string? Summary { get; set; }
 }

@@ -1,0 +1,63 @@
+﻿@page "/books/edit/{id:guid}"
+@rendermode InteractiveWebAssembly
+
+@using BookCatalogClient.Models
+
+@inject ILogger<Books> logger
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Edit Book</h3>
+
+<div class="form-group">
+    <label for="name">Name</label>
+    <input id="name" class="form-control" @bind="editedBook.Name" />
+</div>
+<div class="form-group">
+    <label for="author">Author</label>
+    <input id="author" class="form-control" @bind="editedBook.Author" />
+</div>
+<div class="form-group">
+    <label for="date">Date</label>
+    <input id="date" type="date" class="form-control" @bind="editedBook.Date" />
+</div>
+<div class="form-group">
+    <label for="summary">Summary</label>
+    <textarea id="summary" class="form-control" @bind="editedBook.Summary"></textarea>
+</div>
+<button class="btn btn-primary mt-2" @onclick="SaveChanges">Save</button>
+<button class="btn btn-secondary mt-2" @onclick="Cancel">Cancel</button>
+
+@code {
+    [Parameter] public Guid Id { get; set; } = Guid.Empty;
+    private BookItem? editedBook = new();
+    private string? serviceEndpoint;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Logic to fetch the book details by Name (e.g., from a shared list or an API)
+        // For now, mock data is used.
+        serviceEndpoint = $"https://localhost:57211/books";
+        editedBook = await Http.GetFromJsonAsync<BookItem>($"{serviceEndpoint}/{Id}");
+        if (editedBook == null) {
+            NavigationManager.NavigateTo("/books/add");
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+        if (!string.IsNullOrWhiteSpace(editedBook?.Name))
+        {
+            var addItem = new BookItem { Name = editedBook.Name, Author = editedBook.Author, Date = editedBook.Date, Summary = editedBook.Summary };
+            var response = await Http.PutAsJsonAsync<BookItem>($"{serviceEndpoint}/{Id}", editedBook);
+            editedBook = new();
+            NavigationManager.NavigateTo("/books");
+        }
+        NavigationManager.NavigateTo("/books");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/books");
+    }
+}

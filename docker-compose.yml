@@ -15,7 +15,10 @@ services:
       context: .
       dockerfile: BookCatalogClient/Dockerfile
     networks: 
-      - catalog
+      - catalog 
+    depends_on: 
+      - bookcatalogapi
+
       
 networks:
   catalog:

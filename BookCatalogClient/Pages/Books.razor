@@ -1,6 +1,17 @@
 ﻿@page "/books"
+@rendermode InteractiveWebAssembly
+
 @using BookCatalogClient.Models
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.AspNetCore.Http.Connections
+@using Microsoft.AspNetCore.SignalR.Client
+
+@inject IConfiguration Config
+@inject ILogger<Books> logger
 @inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+@implements IAsyncDisposable
 
 <PageTitle>Books</PageTitle>
 
@@ -12,82 +23,104 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Temp. (C)</th>
-                <th>Temp. (F)</th>
-                <th>Summary</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var book in bookItems)
-            {
-                <tr>
-                    <td>@book.Date.ToShortDateString()</td>
-                    <td>@book.Name</td>
-                    <td>@book.Author</td>
-                    <td>@book.Summary</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div>
+        <input class="form-control mb-3" placeholder="Filter by Name, Author, Date, or Summary" @bind="filterText" />
+        <div class="form-group mb-3">
+            <label for="rowsPerPage">Rows Per Page:</label>
+            <input id="rowsPerPage" type="number" class="form-control" style="width: 100px; display: inline-block;" @bind="rowsPerPage" />
+        </div>
+        <QuickGrid Items="bookItems?.AsQueryable()" RowsPerPage="rowsPerPage">
+            <PropertyColumn Title="Name" Property="b => b.Name" Sortable="true" />
+            <PropertyColumn Title="Author" Property="b => b.Author" Sortable="true" />
+            <PropertyColumn Title="Date" Property="b => b.Date" Sortable="true" />
+            <PropertyColumn Title="Summary" Property="b => b.Summary" Sortable="true" />
+            <TemplateColumn>
+                <button class="btn btn-secondary" @onclick="() => NavigateToEditBook(context)">Edit</button>
+                <button class="btn btn-secondary" @onclick="() => DeleteItem(context.Id)">Delete</button>
+            </TemplateColumn>
+        </QuickGrid>
+        <button class="btn btn-primary mt-3" @onclick="NavigateToAddBook">Add New Book</button>
+    </div>
 }
 
 @code {
     private BookItem editItem = new();
-    private string editRowStyle = "none";
-    private string? newItemName;
     private string? serviceEndpoint;
     private BookItem[]? bookItems;
+    private string filterText = string.Empty;
+    private int rowsPerPage = 5;
+    private HubConnection? hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
-        serviceEndpoint = $"{Config.GetValue<string>("BackendUrl")}/todoitems";
-        await GetTodoItems();
-    }
+        serviceEndpoint = $"https://localhost:57211/books";
 
-    private async Task GetTodoItems()
-    {
-        bookItems = await Http.GetFromJsonAsync<BookItem[]>();
-    }
+        // Initialize SignalR connection
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl("ws://localhost:57210/bookshub", o =>
+                {
+                    o.Transports = HttpTransportType.WebSockets;
+                    o.SkipNegotiation = true;
+                }).Build();
 
-    private void EditItem(long id)
-    {
-        if (bookItems is not null)
+        hubConnection.On<BookItem>("BookUpdated", book =>
         {
-            editItem = bookItems.Single(i => i.Id == id);
-            editRowStyle = "table-row";
+            var existingBook = bookItems.FirstOrDefault(b => b.Id == book.Id);
+            if (existingBook != null)
+            {
+                existingBook.Name = book.Name;
+                existingBook.Author = book.Author;
+                existingBook.Date = book.Date;
+                existingBook.Summary = book.Summary;
+
+                StateHasChanged();
+                // HighlightUpdatedBook(book.Id);
+            }
+        });
+
+        await hubConnection.StartAsync();
+        
+        await GetBookItems();
+    }
+
+    // private void HighlightUpdatedBook(Guid bookId)
+    // {
+    //     var bookElement = document.getElementById($"book-{bookId}");
+    //     if (bookElement != null)
+    //     {
+    //         bookElement.classList.add("highlight");
+    //         setTimeout(() => bookElement.classList.remove("highlight"), 2000);
+    //     }
+    // }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
         }
     }
 
-    private async Task AddItem()
+    private async Task GetBookItems()
     {
-        if (!string.IsNullOrEmpty(newItemName))
-        {
-            var addItem = new BookItem { Name = newItemName };
-            await Http.PostAsJsonAsync(serviceEndpoint, addItem);
-            newItemName = string.Empty;
-            await GetTodoItems();
-            editRowStyle = "none";
-        }
+        bookItems = await Http.GetFromJsonAsync<BookItem[]>(serviceEndpoint);
     }
 
-    private async Task SaveItem()
+    private void NavigateToAddBook()
     {
-        if (editItem is not null)
-        {
-            await Http.PutAsJsonAsync($"{serviceEndpoint}/{editItem.Id}", editItem);
-        }
-        await GetTodoItems();
-        editRowStyle = "none";
+        NavigationManager.NavigateTo("/books/add");
     }
 
-    private async Task DeleteItem(long id)
+    private void NavigateToEditBook(BookItem book)
     {
-        await Http.DeleteAsync($"{serviceEndpoint}/{id}");
-        await GetTodoItems();
-        editRowStyle = "none";
+        NavigationManager.NavigateTo($"/books/edit/{book.Id}");
+    }
+
+    private async Task DeleteItem(Guid id)
+    {
+        if (id != default) {
+            await Http.DeleteAsync($"{serviceEndpoint}/{id}");
+            await GetBookItems();
+        }
     }
 }
