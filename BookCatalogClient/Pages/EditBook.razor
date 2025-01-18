@@ -3,6 +3,7 @@
 
 @using BookCatalogClient.Models
 
+@inject IConfiguration Config
 @inject ILogger<Books> logger
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
@@ -41,7 +42,8 @@
     {
         // Logic to fetch the book details by Name (e.g., from a shared list or an API)
         // For now, mock data is used.
-        serviceEndpoint = $"https://localhost:57211/books";
+        var api = Config.GetValue<string>("API_URI");
+        serviceEndpoint = $"{api}/books";
         editedBook = await Http.GetFromJsonAsync<BookItem>($"{serviceEndpoint}/{Id}");
         if (editedBook == null) {
             NavigationManager.NavigateTo("/books/add");

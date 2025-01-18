@@ -47,7 +47,7 @@
 @code {
     private QuickGrid<BookItem>? grid;
     private BookItem editItem = new();
-    private string serviceEndpoint;
+    private string apiEndpoint;
     private BookItem[]? bookItems;
     private string? filterText;
     private string FilterText
@@ -69,13 +69,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        serviceEndpoint = $"https://localhost:57211/books";
+        var api = Config.GetValue<string>("API_URI");
+        var ws = Config.GetValue<string>("WS_URI");
+        apiEndpoint = $"{api}/books";
 
         itemsProvider = async req =>
         {
             var sortBy = req.GetSortByProperties().FirstOrDefault();
             var url = NavigationManager.GetUriWithQueryParameters(
-                serviceEndpoint, new Dictionary<string, object?>
+                apiEndpoint, new Dictionary<string, object?>
                                 {
                                     { nameof(filterText), filterText?.Length > 2 ? filterText : null },
                                     { "limit", pagination.ItemsPerPage },
@@ -91,8 +93,9 @@
                 totalItemCount: response.Total);
         };
 
+
         hubConnection = new HubConnectionBuilder()
-            .WithUrl("ws://localhost:57210/bookshub", o =>
+            .WithUrl($"{ws}/bookshub", o =>
                 {
                     o.Transports = HttpTransportType.WebSockets;
                     o.SkipNegotiation = true;
@@ -169,7 +172,7 @@
     {
         if (id != default)
         {
-            await Http.DeleteAsync($"{serviceEndpoint}/{id}");
+            await Http.DeleteAsync($"{apiEndpoint}/{id}");
             StateHasChanged();
         }
     }

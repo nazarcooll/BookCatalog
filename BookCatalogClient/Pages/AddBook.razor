@@ -2,6 +2,8 @@
 @rendermode InteractiveWebAssembly
 
 @using BookCatalogClient.Models
+
+@inject IConfiguration Config
 @inject ILogger<Books> logger
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
@@ -41,7 +43,8 @@
 
     protected override void OnInitialized()
     {
-        serviceEndpoint = $"https://localhost:57211/books";
+        var api = Config.GetValue<string>("API_URI");
+        serviceEndpoint = $"{api}/books";
     }
 
     private async Task SaveBook()

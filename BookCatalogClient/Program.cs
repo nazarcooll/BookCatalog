@@ -9,8 +9,9 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddLogging(builder => builder
     .AddBrowserConsole()
-    .SetMinimumLevel(LogLevel.Trace)
 );
+
+builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
