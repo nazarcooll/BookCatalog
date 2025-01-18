@@ -73,13 +73,14 @@
 
         itemsProvider = async req =>
         {
+            var sortBy = req.GetSortByProperties().FirstOrDefault();
             var url = NavigationManager.GetUriWithQueryParameters(
                 serviceEndpoint, new Dictionary<string, object?>
                                 {
                                     { nameof(filterText), filterText?.Length > 2 ? filterText : null },
                                     { "limit", pagination.ItemsPerPage },
                                     { "skip", req.StartIndex },
-                                    { "sort", $"{(req.SortByAscending ? "+" : "-")}{req.SortByColumn}" }
+                                    { "sort", $"{sortBy.PropertyName}__{sortBy.Direction}" }
                                 });
 
             var response = await Http.GetFromJsonAsync<BooksResult>(

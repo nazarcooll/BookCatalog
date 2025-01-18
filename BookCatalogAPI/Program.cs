@@ -80,13 +80,20 @@ static async Task<IResult> GetAllBooks(BooksCatalogContext db, string? filterTex
         query = query.Where(e => e.Title!.Contains(filterText) || e.Author.Contains(filterText) || e.Genre.Contains(filterText));
     }
 
-    if (!string.IsNullOrEmpty(sort) && sort.Length > 1)
+    if (!string.IsNullOrEmpty(sort) && !sort.StartsWith("__"))
     {
-        var column = sort.Substring(1, sort.Length);
+        var sortOrder = sort.Split("__");
+        var column = sortOrder[0];
+        var order = sortOrder[1];
 
-        query = sort.First() == '+' ? 
-            query.OrderBy(e => EF.Property<object>(e, column)) : 
+        if (order.Equals("Ascending"))
+        {
+            query = query.OrderBy(e => EF.Property<object>(e, column));
+        }
+        else if (order.Equals("Descending"))
+        {
             query.OrderByDescending(e => EF.Property<object>(e, column));
+        }
     }
 
     var total = query.Count();
