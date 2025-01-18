@@ -30,8 +30,8 @@ To run this application on your machine, ensure the following prerequisites are 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-repo/books-catalog.git
-cd books-catalog
+git clone https://github.com/nazarcooll/BookCatalog.git
+cd BookCatalog
 ```
 
 ### 2. Build and Run with Docker Compose
@@ -75,7 +75,7 @@ If you want to run the application locally without Docker:
 2. Navigate to the project folder:
 
    ```bash
-   cd src/BooksCatalog
+   cd src/BookCatalog
    ```
 
 3. Restore dependencies:
@@ -100,4 +100,4 @@ If you want to run the application locally without Docker:
 
 ## Support
 
-For any issues or questions, please open an issue on the [GitHub repository](https://github.com/your-repo/books-catalog/issues).
+For any issues or questions, please open an issue on the [GitHub repository](https://github.com/nazarcooll/BookCatalog/issues).
