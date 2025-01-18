@@ -11,11 +11,15 @@
 
 <div class="form-group">
     <label for="name">Name</label>
-    <input id="name" class="form-control" @bind="editedBook.Name" />
+    <input id="name" class="form-control" @bind="editedBook.Title" />
 </div>
 <div class="form-group">
     <label for="author">Author</label>
     <input id="author" class="form-control" @bind="editedBook.Author" />
+</div>
+<div class="form-group">
+    <label for="genre">Genre</label>
+    <input id="genre" class="form-control" @bind="editedBook.Genre" />
 </div>
 <div class="form-group">
     <label for="date">Date</label>
@@ -46,9 +50,9 @@
 
     private async Task SaveChanges()
     {
-        if (!string.IsNullOrWhiteSpace(editedBook?.Name))
+        if (!string.IsNullOrWhiteSpace(editedBook?.Title))
         {
-            var addItem = new BookItem { Name = editedBook.Name, Author = editedBook.Author, Date = editedBook.Date, Summary = editedBook.Summary };
+            var addItem = new BookItem { Title = editedBook.Title, Author = editedBook.Author, Date = editedBook.Date, Summary = editedBook.Summary };
             var response = await Http.PutAsJsonAsync<BookItem>($"{serviceEndpoint}/{Id}", editedBook);
             editedBook = new();
             NavigationManager.NavigateTo("/books");

@@ -2,6 +2,10 @@ using BookCatalogAPI.Model;
 using BookCatalogAPI.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
+using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Runtime.CompilerServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +27,16 @@ builder.Services.AddCors(
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
+builder.Services.AddRateLimiter(_ =>
+{
+    _.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    _.AddFixedWindowLimiter("fixed", c =>
+    {
+        c.Window = TimeSpan.FromSeconds(10);
+        c.PermitLimit = 3;
+        c.QueueLimit = 0;
+    });
+});
 
 var app = builder.Build();
 
@@ -48,9 +62,29 @@ app.MapHub<BooksHub>("/bookshub");
 
 app.Run();
 
-static async Task<IResult> GetAllBooks(BooksCatalogContext db)
+static async Task<IResult> GetAllBooks(BooksCatalogContext db, string? filterText = null, string? sort = null, int skip = 0, int limit = 10)
 {
-    return TypedResults.Ok(await db.Books.ToArrayAsync());
+    var query = db.Books.AsQueryable();
+    if (!string.IsNullOrEmpty(filterText))
+    {
+        query = query.Where(e => e.Title!.Contains(filterText) || e.Author.Contains(filterText) || e.Genre.Contains(filterText));
+    }
+
+    if (!string.IsNullOrEmpty(sort) && sort.Length > 1)
+    {
+        var column = sort.Substring(1, sort.Length);
+
+        query = sort.First() == '+' ? 
+            query.OrderBy(e => EF.Property<object>(e, column)) : 
+            query.OrderByDescending(e => EF.Property<object>(e, column));
+    }
+
+    var total = query.Count();
+
+    query = query.Skip(skip).Take(limit);
+    var result = await query.ToListAsync();
+
+    return TypedResults.Ok(new { Result = result, Total = total });
 }
 
 static async Task<IResult> GetBook(Guid id, BooksCatalogContext db)
@@ -75,7 +109,7 @@ static async Task<IResult> UpdateBook(Guid id, Book inputBook, BooksCatalogConte
         return TypedResults.NotFound();
     }
 
-    book.Name = inputBook.Name;
+    book.Title = inputBook.Title;
     book.Author = inputBook.Author;
     book.Date = inputBook.Date;
     book.Summary = inputBook.Summary;
