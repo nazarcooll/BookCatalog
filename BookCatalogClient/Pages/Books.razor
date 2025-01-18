@@ -30,14 +30,14 @@
         </select>
     </div>
     <QuickGrid ItemsProvider="itemsProvider" Pagination="pagination" @ref=grid>
-        <PropertyColumn Title="Title" Property="b => b.Title" Sortable="true" />
+        <PropertyColumn Title="Title" Property="b => b.Title"  Sortable="true" />
         <PropertyColumn Title="Author" Property="b => b.Author" Sortable="true" />
         <PropertyColumn Title="Genre" Property="b => b.Genre" Sortable="true" />
-        <PropertyColumn Title="Date" Property="b => b.Date" Sortable="true" />
+        <PropertyColumn Title="Date" Property="b => b.Date" Format="dd.MM.yyyy" Sortable="true" />
         <PropertyColumn Title="Summary" Property="b => b.Summary" Sortable="true" />
-        <TemplateColumn>
-            <button class="btn btn-secondary" @onclick="() => NavigateToEditBook(context)">Edit</button>
-            <button class="btn btn-secondary" @onclick="() => DeleteItem(context.Id)">Delete</button>
+        <TemplateColumn Title="Actions">
+            <button class="btn btn-link" @onclick="() => NavigateToEditBook(context)">Edit</button>
+            <button class="btn btn-link" @onclick="() => DeleteItem(context.Id)">Delete</button>
         </TemplateColumn>
     </QuickGrid>
     <Paginator State="pagination" />

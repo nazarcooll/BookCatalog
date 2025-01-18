@@ -48,7 +48,7 @@ public static class BooksSeeder
                 Author = authors[random.Next(authors.Length)],
                 Genre = genres[random.Next(genres.Length)],
                 Summary = summaries[random.Next(summaries.Length)],
-                Date = DateTime.Now.AddDays(-random.Next(0, 10000)) // Random date in the past ~27 years
+                Date = DateTime.Now.AddDays(-random.Next(0, 10000)).Date // Random date in the past ~27 years
             });
         }
 

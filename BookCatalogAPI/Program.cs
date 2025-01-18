@@ -111,6 +111,7 @@ static async Task<IResult> GetBook(Guid id, BooksCatalogContext db)
 
 static async Task<IResult> CreateBook(Book book, BooksCatalogContext db)
 {
+    book.Date = book.Date?.Date;
     db.Books.Add(book);
     await db.SaveChangesAsync();
 
@@ -128,7 +129,7 @@ static async Task<IResult> UpdateBook(Guid id, Book inputBook, BooksCatalogConte
 
     book.Title = inputBook.Title;
     book.Author = inputBook.Author;
-    book.Date = inputBook.Date;
+    book.Date = inputBook.Date?.Date;
     book.Summary = inputBook.Summary;
 
     await db.SaveChangesAsync();
