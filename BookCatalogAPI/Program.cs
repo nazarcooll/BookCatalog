@@ -6,12 +6,19 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Runtime.CompilerServices;
+using BookCatalogAPI;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddDbContext<BooksCatalogContext>(opt => opt.UseInMemoryDatabase("TodoList"));
+builder.Services.AddDbContext<BooksCatalogContext>(opt => opt.UseInMemoryDatabase("TodoList")
+.UseSeeding((ctx, _) => {
+        var books = BooksSeeder.SeedBooks();
+        ctx.Set<Book>().AddRange(books);
+        ctx.SaveChanges();
+    })
+);
 
 // Add a CORS policy for the client
 // Add .AllowCredentials() for apps that use an Identity Provider for authn/z
@@ -45,6 +52,9 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    using var scp = app.Services.CreateScope();
+    using var ctx = scp.ServiceProvider.GetService<BooksCatalogContext>();
+    ctx?.Database.EnsureCreated();
 }
 
 app.UseCors("wasm");
