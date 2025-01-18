@@ -92,7 +92,7 @@ static async Task<IResult> GetAllBooks(BooksCatalogContext db, string? filterTex
         }
         else if (order.Equals("Descending"))
         {
-            query.OrderByDescending(e => EF.Property<object>(e, column));
+            query = query.OrderByDescending(e => EF.Property<object>(e, column));
         }
     }
 
