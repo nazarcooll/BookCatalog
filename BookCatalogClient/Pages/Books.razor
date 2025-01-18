@@ -64,6 +64,7 @@
     PaginationState pagination = new PaginationState { ItemsPerPage = 5 };
     private Timer? debounceTimer;
     private const int DebounceInterval = 1000;
+    private BookItem[] items;
 
     private GridItemsProvider<BookItem>? itemsProvider;
 
@@ -88,6 +89,7 @@
             var response = await Http.GetFromJsonAsync<BooksResult>(
                 url, req.CancellationToken);
 
+            items = response.Result;
             return GridItemsProviderResult.From(
                 items: response.Result,
                 totalItemCount: response.Total);
@@ -101,16 +103,18 @@
                     o.SkipNegotiation = true;
                 }).Build();
 
-        hubConnection.On<BookItem>("BookUpdated", book =>
+        hubConnection.On<BookItem>("BookUpdated", async book =>
         {
-            var existingBook = bookItems?.FirstOrDefault(b => b.Id == book.Id);
+            var existingBook = items?.FirstOrDefault(b => b.Id == book.Id);
+            logger.LogInformation(JsonSerializer.Serialize(book, new JsonSerializerOptions { WriteIndented = true }));
+            logger.LogInformation("book is " + existingBook == null ? "NOT FOUND" : "Updated on backend");
             if (existingBook != null)
             {
                 existingBook.Title = book.Title;
                 existingBook.Author = book.Author;
+                existingBook.Genre = book.Genre;
                 existingBook.Date = book.Date;
                 existingBook.Summary = book.Summary;
-
                 StateHasChanged();
                 // HighlightUpdatedBook(book.Id);
             }
